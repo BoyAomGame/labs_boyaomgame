@@ -16,7 +16,9 @@ const path = require('node:path');
 // Load root .env if present (Node 20.6+ built-in). Does not override host env vars.
 try { process.loadEnvFile(path.join(__dirname, '.env')); } catch {}
 
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'misc', 'data');
+const DATA_DIR = process.env.DATA_DIR
+  ? path.resolve(__dirname, process.env.DATA_DIR)
+  : path.join(__dirname, 'misc', 'data');
 
 module.exports = {
   apps: [
