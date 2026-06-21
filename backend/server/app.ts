@@ -27,11 +27,20 @@ export function createApp(): express.Application {
   // 2. Page auth gate for admin pages (dashboard, posts/*)
   app.get(/^\/backend\/(dashboard|posts)(\/.*)?$/, pageGuard);
 
-  // 3. Ensure /backend and /backend/ both serve the login page
+  const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
+
+  // 3. Posts list page. build.format:'file' emits it as posts.html, but the sibling
+  //    posts/new + posts/edit pages create a dist/posts/ directory that shadows it in
+  //    serve-static (it 301s /backend/posts -> /backend/posts/ then 404s on the missing
+  //    posts/index.html). Serve the file directly before the static middleware.
+  app.get(['/backend/posts', '/backend/posts/'], (_req, res) => {
+    res.sendFile(path.join(frontendDist, 'posts.html'));
+  });
+
+  // 4. Ensure /backend and /backend/ both serve the login page
   //    (handled by express.static with index:'index.html' below)
 
-  // 4. Static admin frontend
-  const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
+  // 5. Static admin frontend
   app.use('/backend', express.static(frontendDist, {
     extensions: ['html'],
     index: 'index.html',
