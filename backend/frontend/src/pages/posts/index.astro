@@ -1,0 +1,148 @@
+---
+const base = import.meta.env.BASE_URL;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Posts — Labs Admin</title>
+  <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117; --bg2: #1a1d27; --bg3: #222533;
+      --border: #2e3248; --text: #e2e8f0; --text-muted: #8892a4;
+      --accent: #6366f1; --accent-hover: #818cf8;
+      --danger: #ef4444; --radius: 6px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+    header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { font-weight: 700; font-size: 16px; color: var(--text); text-decoration: none; }
+    header nav { display: flex; gap: 16px; align-items: center; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-hover); }
+    .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+    .btn { display: inline-flex; align-items: center; padding: 7px 14px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 13px; font-weight: 500; font-family: var(--font); transition: background 0.15s; text-decoration: none; }
+    .btn:disabled { opacity: 0.5; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .posts-table { width: 100%; border-collapse: collapse; }
+    .posts-table th, .posts-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .posts-table th { color: var(--text-muted); font-weight: 500; }
+    .posts-table tr:last-child td { border-bottom: none; }
+    .posts-table tr:hover td { background: var(--bg3); }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    .badge-gray { background: var(--bg3); color: var(--text-muted); }
+    .badge-yellow { background: #431407; color: #fcd34d; }
+    .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    #loading { color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="/backend/dashboard">Labs Admin</a>
+    <nav>
+      <a href="/backend/dashboard">Dashboard</a>
+      <a href="/backend/posts">Posts</a>
+      <button class="btn btn-secondary btn-sm" id="logout-btn">Logout</button>
+    </nav>
+  </header>
+  <div class="container">
+    <div class="top-bar">
+      <h1>Posts</h1>
+      <a href="/backend/posts/new" class="btn btn-primary">New post</a>
+    </div>
+    <div id="loading">Loading posts…</div>
+    <div class="card" id="posts-card" style="display:none">
+      <table class="posts-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="posts-body"></tbody>
+      </table>
+    </div>
+    <p id="empty-msg" style="color:#8892a4;display:none">No posts yet. <a href="/backend/posts/new">Create one</a>.</p>
+  </div>
+
+  <script>
+    const BASE = '/backend';
+
+    (async () => {
+      try {
+        const r = await fetch(`${BASE}/api/me`);
+        if (!r.ok) window.location.href = `${BASE}/`;
+      } catch { window.location.href = `${BASE}/`; }
+    })();
+
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await fetch(`${BASE}/api/logout`, { method: 'POST' });
+      window.location.href = `${BASE}/`;
+    });
+
+    async function loadPosts() {
+      const loading = document.getElementById('loading')!;
+      const card = document.getElementById('posts-card')!;
+      const tbody = document.getElementById('posts-body')!;
+      const empty = document.getElementById('empty-msg')!;
+      try {
+        const res = await fetch(`${BASE}/api/posts`);
+        if (!res.ok) throw new Error('Failed to load posts');
+        const posts = await res.json() as any[];
+        loading.style.display = 'none';
+        if (posts.length === 0) {
+          empty.style.display = 'block';
+          return;
+        }
+        card.style.display = 'block';
+        tbody.innerHTML = posts.map(p => `
+          <tr>
+            <td>${escHtml(p.title)}</td>
+            <td>${escHtml(p.date)}</td>
+            <td>${p.draft ? '<span class="badge badge-yellow">Draft</span>' : '<span class="badge badge-gray">Published</span>'}</td>
+            <td style="text-align:right">
+              <a href="${BASE}/posts/edit?slug=${encodeURIComponent(p.slug)}" class="btn btn-secondary btn-sm" style="margin-right:6px">Edit</a>
+              <button class="btn btn-danger btn-sm" data-slug="${escAttr(p.slug)}">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+
+        document.querySelectorAll('[data-slug]').forEach(el => {
+          el.addEventListener('click', async (e) => {
+            const btn = e.currentTarget as HTMLButtonElement;
+            const slug = btn.dataset.slug!;
+            if (!confirm(`Delete "${slug}"? This cannot be undone.`)) return;
+            btn.disabled = true;
+            const r = await fetch(`${BASE}/api/posts/${encodeURIComponent(slug)}`, { method: 'DELETE' });
+            if (r.ok) { await loadPosts(); }
+            else { alert('Delete failed'); btn.disabled = false; }
+          });
+        });
+      } catch (err: any) {
+        loading.textContent = err.message;
+      }
+    }
+
+    function escHtml(s: string): string {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function escAttr(s: string): string {
+      return s.replace(/"/g,'&quot;');
+    }
+
+    loadPosts();
+  </script>
+</body>
+</html>

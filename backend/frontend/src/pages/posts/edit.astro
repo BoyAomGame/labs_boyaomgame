@@ -1,0 +1,256 @@
+---
+const base = import.meta.env.BASE_URL;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Post — Labs Admin</title>
+  <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117; --bg2: #1a1d27; --bg3: #222533;
+      --border: #2e3248; --text: #e2e8f0; --text-muted: #8892a4;
+      --accent: #6366f1; --accent-hover: #818cf8; --danger: #ef4444;
+      --success: #22c55e; --radius: 6px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+    header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { font-weight: 700; font-size: 16px; color: var(--text); text-decoration: none; }
+    header nav { display: flex; gap: 16px; align-items: center; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-hover); }
+    .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+    .card-title { font-weight: 600; font-size: 15px; margin-bottom: 14px; }
+    label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; margin-top: 14px; }
+    label:first-child { margin-top: 0; }
+    input[type="text"], input[type="date"], textarea, input[type="file"] {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); padding: 8px 10px; font-size: 14px;
+      font-family: var(--font); outline: none;
+    }
+    input[type="file"] { cursor: pointer; }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 300px; }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+    .checkbox-row input[type="checkbox"] { width: auto; }
+    .btn { display: inline-flex; align-items: center; padding: 7px 16px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 13px; font-weight: 500; font-family: var(--font); transition: background 0.15s; text-decoration: none; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover:not(:disabled) { background: #dc2626; }
+    .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover:not(:disabled) { background: var(--border); }
+    .actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+    .error-msg { color: var(--danger); font-size: 13px; margin-top: 10px; }
+    .success-msg { color: var(--success); font-size: 13px; margin-top: 10px; }
+    .image-result { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; font-family: monospace; font-size: 12px; margin-top: 8px; word-break: break-all; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="/backend/dashboard">Labs Admin</a>
+    <nav>
+      <a href="/backend/dashboard">Dashboard</a>
+      <a href="/backend/posts">Posts</a>
+      <button class="btn btn-secondary btn-sm" id="logout-btn">Logout</button>
+    </nav>
+  </header>
+  <div class="container">
+    <h1 id="page-title">Edit Post</h1>
+    <div id="loading" style="color:#8892a4">Loading post…</div>
+    <div id="content" style="display:none">
+      <div class="card">
+        <form id="post-form">
+          <label for="title">Title *</label>
+          <input type="text" id="title" name="title" required />
+
+          <label for="date">Date *</label>
+          <input type="date" id="date" name="date" required />
+
+          <label for="tags">Tags (comma-separated)</label>
+          <input type="text" id="tags" name="tags" />
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="draft" name="draft" />
+            <label for="draft" style="margin:0;cursor:pointer">Save as draft</label>
+          </div>
+
+          <label for="body">Body (Markdown)</label>
+          <textarea id="body" name="body"></textarea>
+
+          <div class="actions">
+            <button type="submit" class="btn btn-primary" id="save-btn">Save</button>
+            <button type="button" class="btn btn-danger" id="delete-btn">Delete Post</button>
+            <a href="/backend/posts" class="btn btn-secondary">Back to Posts</a>
+          </div>
+          <p class="error-msg" id="error-msg"></p>
+          <p class="success-msg" id="success-msg"></p>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Upload Image</div>
+        <label for="image-file">Image file (png, jpg, gif, webp, svg — max 5MB)</label>
+        <input type="file" id="image-file" accept=".png,.jpg,.jpeg,.gif,.webp,.svg" />
+        <div style="margin-top:10px">
+          <button class="btn btn-secondary" id="upload-btn">Upload</button>
+        </div>
+        <div id="upload-result" style="display:none">
+          <p class="success-msg" id="upload-ok-msg"></p>
+          <div class="image-result" id="upload-snippet"></div>
+          <p style="color:#8892a4;font-size:12px;margin-top:6px">Paste the snippet above into the body to embed the image.</p>
+        </div>
+        <p class="error-msg" id="upload-error"></p>
+      </div>
+    </div>
+    <p class="error-msg" id="load-error" style="display:none"></p>
+  </div>
+
+  <script>
+    const BASE = '/backend';
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('slug') || '';
+
+    (async () => {
+      try {
+        const r = await fetch(`${BASE}/api/me`);
+        if (!r.ok) { window.location.href = `${BASE}/`; return; }
+      } catch { window.location.href = `${BASE}/`; return; }
+
+      if (!slug) {
+        document.getElementById('loading')!.textContent = 'No slug provided';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${BASE}/api/posts/${encodeURIComponent(slug)}`);
+        if (!res.ok) throw new Error('Post not found');
+        const post = await res.json() as any;
+
+        document.getElementById('page-title')!.textContent = `Edit: ${post.title}`;
+        (document.getElementById('title') as HTMLInputElement).value = post.title || '';
+        (document.getElementById('date') as HTMLInputElement).value = post.date || '';
+        (document.getElementById('tags') as HTMLInputElement).value = (post.tags || []).join(', ');
+        (document.getElementById('draft') as HTMLInputElement).checked = !!post.draft;
+        (document.getElementById('body') as HTMLTextAreaElement).value = post.body || '';
+
+        document.getElementById('loading')!.style.display = 'none';
+        document.getElementById('content')!.style.display = 'block';
+      } catch (err: any) {
+        document.getElementById('loading')!.style.display = 'none';
+        const le = document.getElementById('load-error')!;
+        le.textContent = err.message;
+        le.style.display = 'block';
+      }
+    })();
+
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await fetch(`${BASE}/api/logout`, { method: 'POST' });
+      window.location.href = `${BASE}/`;
+    });
+
+    document.getElementById('post-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
+      const errEl = document.getElementById('error-msg')!;
+      const okEl = document.getElementById('success-msg')!;
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving…';
+      errEl.textContent = '';
+      okEl.textContent = '';
+
+      const title = (form.querySelector('#title') as HTMLInputElement).value.trim();
+      const date = (form.querySelector('#date') as HTMLInputElement).value;
+      const tagsRaw = (form.querySelector('#tags') as HTMLInputElement).value;
+      const draft = (form.querySelector('#draft') as HTMLInputElement).checked;
+      const body = (form.querySelector('#body') as HTMLTextAreaElement).value;
+      const tags = tagsRaw.split(',').map((t: string) => t.trim()).filter(Boolean);
+
+      try {
+        const res = await fetch(`${BASE}/api/posts/${encodeURIComponent(slug)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, date, tags, draft, body }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          okEl.textContent = 'Saved!';
+          setTimeout(() => { okEl.textContent = ''; }, 3000);
+        } else {
+          errEl.textContent = data.error || 'Save failed';
+        }
+      } catch {
+        errEl.textContent = 'Network error';
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+      }
+    });
+
+    document.getElementById('delete-btn')?.addEventListener('click', async () => {
+      if (!confirm(`Delete "${slug}"? This cannot be undone.`)) return;
+      const btn = document.getElementById('delete-btn') as HTMLButtonElement;
+      btn.disabled = true;
+      const res = await fetch(`${BASE}/api/posts/${encodeURIComponent(slug)}`, { method: 'DELETE' });
+      if (res.ok) {
+        window.location.href = `${BASE}/posts`;
+      } else {
+        alert('Delete failed');
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('upload-btn')?.addEventListener('click', async () => {
+      const fileInput = document.getElementById('image-file') as HTMLInputElement;
+      const btn = document.getElementById('upload-btn') as HTMLButtonElement;
+      const resultDiv = document.getElementById('upload-result')!;
+      const errEl = document.getElementById('upload-error')!;
+      const okMsg = document.getElementById('upload-ok-msg')!;
+      const snippet = document.getElementById('upload-snippet')!;
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        errEl.textContent = 'Please select a file first';
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('image', file);
+
+      btn.disabled = true;
+      btn.textContent = 'Uploading…';
+      errEl.textContent = '';
+      resultDiv.style.display = 'none';
+
+      try {
+        const res = await fetch(`${BASE}/api/posts/${encodeURIComponent(slug)}/images`, {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        if (res.ok) {
+          okMsg.textContent = `Uploaded: ${data.filename}`;
+          snippet.textContent = `![${data.filename}](images/${data.filename})`;
+          resultDiv.style.display = 'block';
+        } else {
+          errEl.textContent = data.error || 'Upload failed';
+        }
+      } catch {
+        errEl.textContent = 'Network error';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Upload';
+      }
+    });
+  </script>
+</body>
+</html>

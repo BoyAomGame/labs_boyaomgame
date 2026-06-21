@@ -1,0 +1,37 @@
+# Reverse proxy for labs.boyaomgame.xyz
+#
+# Routing strategy: the path PREFIX is PASSED THROUGH to each upstream
+# (`handle`, not `handle_path`) and each Astro app owns its `base`, so assets
+# resolve as /blog/_astro/... and /backend/_astro/... without colliding.
+#
+# Production: the bare domain block gets automatic HTTPS from Caddy.
+# Local testing: comment out the domain block and uncomment the localhost one.
+
+labs.boyaomgame.xyz {
+	encode gzip zstd
+
+	# Blog — Astro SSR, base '/blog'
+	handle /blog* {
+		reverse_proxy 127.0.0.1:4322
+	}
+
+	# Backend control plane — Express API + Astro admin UI, base '/backend'
+	handle /backend* {
+		reverse_proxy 127.0.0.1:4323
+	}
+
+	# Hub landing page — Astro SSR, base '/'
+	handle {
+		reverse_proxy 127.0.0.1:4321
+	}
+}
+
+# --- Local testing (no domain / no HTTPS) -----------------------------------
+# Uncomment to test the full routing on http://localhost
+#
+# http://localhost {
+# 	encode gzip zstd
+# 	handle /blog*    { reverse_proxy 127.0.0.1:4322 }
+# 	handle /backend* { reverse_proxy 127.0.0.1:4323 }
+# 	handle           { reverse_proxy 127.0.0.1:4321 }
+# }
