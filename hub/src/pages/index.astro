@@ -1,0 +1,150 @@
+---
+export const prerender = false;
+
+import Base from '../layouts/Base.astro';
+import SystemCard from '../components/SystemCard.astro';
+import { readStatus, SYSTEMS, statusFor } from '../lib/status.js';
+
+const status = readStatus();
+---
+
+<Base title="boyaomgame · labs">
+  <div class="page">
+    <header class="hero">
+      <div class="hero-inner">
+        <p class="hero-eyebrow">labs.boyaomgame.xyz</p>
+        <h1 class="hero-title">
+          <span class="wordmark">boyaomgame</span>
+          <span class="hero-sep">·</span>
+          <span class="hero-labs">labs</span>
+        </h1>
+        <p class="hero-tagline">
+          A collection of small tools and experiments. Pick something.
+        </p>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="systems">
+        <h2 class="section-label">Systems</h2>
+        <div class="cards-grid">
+          {SYSTEMS.map((meta) => (
+            <SystemCard
+              name={meta.name}
+              description={meta.description}
+              href={meta.href}
+              state={statusFor(meta, status)}
+            />
+          ))}
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <a href="/backend" class="footer-link">control panel</a>
+    </footer>
+  </div>
+</Base>
+
+<style>
+  .page {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 5rem 0 3rem;
+  }
+
+  .hero-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .hero-eyebrow {
+    font-family: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
+    font-size: 0.75rem;
+    color: #444458;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .hero-title {
+    font-size: clamp(2rem, 6vw, 3rem);
+    font-weight: 700;
+    line-height: 1.1;
+    display: flex;
+    align-items: baseline;
+    gap: 0.4em;
+    flex-wrap: wrap;
+  }
+
+  .wordmark {
+    font-family: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
+    color: #e8e8f0;
+  }
+
+  .hero-sep {
+    color: #333348;
+    font-weight: 300;
+  }
+
+  .hero-labs {
+    color: #6366f1;
+    font-family: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
+  }
+
+  .hero-tagline {
+    font-size: 1rem;
+    color: #666677;
+    max-width: 400px;
+    line-height: 1.6;
+    margin-top: 0.25rem;
+  }
+
+  /* Main */
+  .main {
+    flex: 1;
+    padding-bottom: 4rem;
+  }
+
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #444458;
+    margin-bottom: 1rem;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.875rem;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 1.5rem 0;
+    border-top: 1px solid #1a1a28;
+    text-align: right;
+  }
+
+  .footer-link {
+    font-family: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
+    font-size: 0.75rem;
+    color: #333348;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .footer-link:hover {
+    color: #666677;
+  }
+</style>

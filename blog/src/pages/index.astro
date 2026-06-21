@@ -1,0 +1,33 @@
+---
+import BlogLayout from '../layouts/BlogLayout.astro';
+import PostCard from '../components/PostCard.astro';
+import { listPosts } from '../lib/posts.js';
+
+const posts = listPosts();
+---
+<BlogLayout title="Blog" description="boyaomgame labs — all posts">
+  <div class="page-wrapper">
+    <div class="blog-hero">
+      <h1>Blog</h1>
+      <p>Experiments, tools, and write-ups from the lab.</p>
+    </div>
+
+    {posts.length === 0 ? (
+      <div class="empty-state">
+        <p>No posts yet. Check back soon!</p>
+      </div>
+    ) : (
+      <div class="post-grid">
+        {posts.map((post) => (
+          <PostCard
+            title={post.title}
+            date={post.date}
+            slug={post.slug}
+            cover={post.cover}
+            tags={post.tags}
+          />
+        ))}
+      </div>
+    )}
+  </div>
+</BlogLayout>

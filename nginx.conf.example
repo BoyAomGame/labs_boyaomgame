@@ -1,0 +1,42 @@
+# nginx alternative to the Caddyfile (TLS via certbot, not shown here).
+#
+# Like Caddy, the path prefix is PASSED THROUGH: `proxy_pass` is given a bare
+# host:port with no trailing path, so nginx forwards the original URI and each
+# Astro app keeps its `base` (/blog, /backend). Do not add a path to proxy_pass.
+#
+# Copy to /etc/nginx/sites-available/labs.boyaomgame.xyz and enable it.
+
+server {
+    listen 80;
+    server_name labs.boyaomgame.xyz;
+
+    # Blog — Astro SSR, base '/blog'
+    location /blog {
+        proxy_pass http://127.0.0.1:4322;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Backend control plane — base '/backend'
+    location /backend {
+        proxy_pass http://127.0.0.1:4323;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # allow blog image / post uploads through the proxy
+        client_max_body_size 10m;
+    }
+
+    # Hub landing page — base '/'
+    location / {
+        proxy_pass http://127.0.0.1:4321;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

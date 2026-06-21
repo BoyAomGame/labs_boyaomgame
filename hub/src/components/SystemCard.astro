@@ -1,0 +1,153 @@
+---
+import type { SystemState } from '../lib/status.js';
+
+interface Props {
+  name: string;
+  description: string;
+  href: string | null;
+  state: SystemState;
+}
+
+const { name, description, href, state } = Astro.props;
+
+const stateLabel: Record<SystemState, string> = {
+  online: 'Online',
+  maintenance: 'Maintenance',
+  'coming-soon': 'Coming Soon',
+};
+
+const stateClass: Record<SystemState, string> = {
+  online: 'state-online',
+  maintenance: 'state-maintenance',
+  'coming-soon': 'state-coming-soon',
+};
+
+const isClickable = href !== null && state !== 'coming-soon';
+---
+
+{isClickable ? (
+  <a href={href} class={`card card--link ${stateClass[state]}`}>
+    <div class="card-header">
+      <span class="card-name">{name}</span>
+      <span class={`status-badge ${stateClass[state]}`}>
+        <span class="status-dot"></span>
+        {stateLabel[state]}
+      </span>
+    </div>
+    <p class="card-description">{description}</p>
+  </a>
+) : (
+  <div class={`card ${stateClass[state]}`} aria-label={`${name} — ${stateLabel[state]}`}>
+    <div class="card-header">
+      <span class="card-name">{name}</span>
+      <span class={`status-badge ${stateClass[state]}`}>
+        <span class="status-dot"></span>
+        {stateLabel[state]}
+      </span>
+    </div>
+    <p class="card-description">{description}</p>
+  </div>
+)}
+
+<style>
+  .card {
+    background: #111118;
+    border: 1px solid #2a2a3a;
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    transition: border-color 0.15s, background 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .card--link:hover {
+    border-color: #44445a;
+    background: #16161f;
+    cursor: pointer;
+  }
+
+  .card--link:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+  }
+
+  .state-coming-soon {
+    opacity: 0.55;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .card-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e8e8f0;
+    white-space: nowrap;
+  }
+
+  .card-description {
+    font-size: 0.875rem;
+    color: #777788;
+    line-height: 1.5;
+  }
+
+  /* Status badge */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Online */
+  .state-online .status-badge {
+    background: #052e1a;
+    color: #4ade80;
+    border: 1px solid #166534;
+  }
+  .state-online .status-dot {
+    background: #4ade80;
+    box-shadow: 0 0 5px #4ade8088;
+  }
+
+  /* Maintenance */
+  .state-maintenance .status-badge {
+    background: #2d1a00;
+    color: #fbbf24;
+    border: 1px solid #78350f;
+  }
+  .state-maintenance .status-dot {
+    background: #fbbf24;
+    box-shadow: 0 0 5px #fbbf2488;
+  }
+
+  /* Coming soon */
+  .state-coming-soon .status-badge {
+    background: #18181f;
+    color: #555568;
+    border: 1px solid #2a2a3a;
+  }
+  .state-coming-soon .status-dot {
+    background: #555568;
+  }
+</style>

@@ -1,0 +1,81 @@
+/* ============================================================
+   boyaomgame · labs — global stylesheet
+   Dark, minimal, system-font; monospace accent for code/wordmarks.
+   No UI libraries. CSS only.
+   ============================================================ */
+
+/* Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Root tokens */
+:root {
+  --bg:        #0a0a0f;
+  --surface:   #111118;
+  --border:    #2a2a3a;
+  --text:      #c9c9d4;
+  --text-dim:  #666677;
+  --text-bright: #e8e8f0;
+  --accent:    #6366f1;
+
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SF Mono", "Fira Code",
+               "JetBrains Mono", Consolas, monospace;
+
+  color-scheme: dark;
+}
+
+/* Base */
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+/* Scrollbar (webkit) */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Typography helpers */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-bright);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+code, kbd, samp, pre {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Selection */
+::selection {
+  background: #6366f133;
+  color: var(--text-bright);
+}
