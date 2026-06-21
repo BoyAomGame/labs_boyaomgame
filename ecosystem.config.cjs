@@ -28,6 +28,7 @@ module.exports = {
         HOST: process.env.HUB_HOST || '127.0.0.1',
         PORT: process.env.HUB_PORT || 4321,
         DATA_DIR,
+        NODE_ENV: process.env.NODE_ENV || 'production',
       },
     },
     {
@@ -38,6 +39,7 @@ module.exports = {
         HOST: process.env.BLOG_HOST || '127.0.0.1',
         PORT: process.env.BLOG_PORT || 4322,
         DATA_DIR,
+        NODE_ENV: process.env.NODE_ENV || 'production',
       },
     },
     {
