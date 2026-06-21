@@ -138,54 +138,34 @@ The blog/hub only ever read.
 - Astro apps emit `base`-prefixed asset URLs (view-source shows `/blog/_astro/…`).
 - Reader/writer changes honor the data contract above.
 
-## After merging a PR into main — deploy checklist
+## PR description template — post-merge deploy steps
 
-Run these steps on the production server after every merge to `main`.
-Only rebuild/restart the sub-systems that were actually changed by the PR.
+When creating a GitHub PR, **always append** a "Deploy after merge" section to the PR body
+that lists the exact shell commands to run on the production server. Only include steps for
+sub-systems that were actually changed by the PR.
 
-```bash
-# 1. Pull latest code
+Example section to append:
+
+```
+## Deploy after merge
+
+Run on the production server after pulling `main`:
+
+\`\`\`bash
 git pull origin main
 
-# 2. For each changed sub-system, reinstall deps (if package.json changed)
-#    and rebuild, then reload the PM2 process.
+# hub (if hub/ changed)
+cd hub && npm install && npm run build && pm2 reload labs-hub && cd ..
 
-# --- hub ---
-cd hub
-npm install          # only if hub/package.json changed
-npm run build
-pm2 reload labs-hub
-cd ..
+# blog (if blog/ changed)
+cd blog && npm install && npm run build && pm2 reload labs-blog && cd ..
 
-# --- blog ---
-cd blog
-npm install          # only if blog/package.json changed
-npm run build
-pm2 reload labs-blog
-cd ..
+# backend (if backend/ changed)
+cd backend/server && npm install && npm run build && cd ../frontend && npm install && npm run build && cd ../.. && pm2 reload labs-backend
+\`\`\`
 
-# --- backend ---
-cd backend/server
-npm install          # only if backend/server/package.json changed
-npm run build        # compiles TypeScript → dist/
-cd ../frontend
-npm install          # only if backend/frontend/package.json changed
-npm run build        # compiles Astro → frontend/dist/
-cd ../..
-pm2 reload labs-backend
-
-# 3. Confirm processes are up
-pm2 status
-
-# 4. Smoke-test live URLs
-#   https://labs.boyaomgame.xyz/          (hub)
-#   https://labs.boyaomgame.xyz/blog      (blog)
-#   https://labs.boyaomgame.xyz/backend   (admin)
+> Skip `npm install` lines if no `package.json` was changed.
+> If `ecosystem.config.cjs` changed, run `pm2 reload ecosystem.config.cjs` instead.
 ```
 
-**Notes:**
-- Use `pm2 reload` (zero-downtime) instead of `pm2 restart` whenever possible.
-- If the `ecosystem.config.cjs` changed, run `pm2 reload ecosystem.config.cjs` instead.
-- If env vars in `.env` changed, stop → update `.env` → `pm2 start ecosystem.config.cjs`.
-- `misc/data/` is gitignored — never wiped by a pull; no data migration needed unless the
-  data contract version changed (see `system-status.json` `"version"` field).
+Tailor it to the PR — if only `hub/` was touched, omit the blog and backend blocks.
