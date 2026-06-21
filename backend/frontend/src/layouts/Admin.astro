@@ -1,0 +1,46 @@
+---
+export interface Props {
+  title: string;
+  showNav?: boolean;
+}
+const { title, showNav = true } = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} — Labs Admin</title>
+  <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+  <link rel="stylesheet" href={`${base}/_astro/admin.css`} />
+  <style is:global>
+    /* Inline fallback in case the CSS file isn't found at that path */
+  </style>
+  <slot name="head" />
+</head>
+<body>
+  {showNav && (
+    <header>
+      <a class="brand" href={`${base}/dashboard`}>Labs Admin</a>
+      <nav>
+        <a href={`${base}/dashboard`}>Dashboard</a>
+        <a href={`${base}/posts`}>Posts</a>
+        <button class="btn btn-secondary btn-sm" id="logout-btn">Logout</button>
+      </nav>
+    </header>
+  )}
+  <main class="container">
+    <slot />
+  </main>
+
+  {showNav && (
+    <script>
+      document.getElementById('logout-btn')?.addEventListener('click', async () => {
+        await fetch('/backend/api/logout', { method: 'POST' });
+        window.location.href = '/backend/';
+      });
+    </script>
+  )}
+</body>
+</html>

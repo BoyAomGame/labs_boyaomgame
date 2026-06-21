@@ -1,0 +1,144 @@
+---
+const base = import.meta.env.BASE_URL;
+const today = new Date().toISOString().split('T')[0];
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Post — Labs Admin</title>
+  <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117; --bg2: #1a1d27; --bg3: #222533;
+      --border: #2e3248; --text: #e2e8f0; --text-muted: #8892a4;
+      --accent: #6366f1; --accent-hover: #818cf8; --danger: #ef4444; --radius: 6px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+    header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { font-weight: 700; font-size: 16px; color: var(--text); text-decoration: none; }
+    header nav { display: flex; gap: 16px; align-items: center; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-hover); }
+    .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; margin-top: 14px; }
+    label:first-child { margin-top: 0; }
+    input[type="text"], input[type="date"], textarea {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); padding: 8px 10px; font-size: 14px;
+      font-family: var(--font); outline: none;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 280px; }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+    .checkbox-row input[type="checkbox"] { width: auto; }
+    .btn { display: inline-flex; align-items: center; padding: 7px 16px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 13px; font-weight: 500; font-family: var(--font); transition: background 0.15s; text-decoration: none; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover:not(:disabled) { background: var(--border); }
+    .actions { display: flex; gap: 10px; margin-top: 20px; }
+    .error-msg { color: var(--danger); font-size: 13px; margin-top: 10px; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="/backend/dashboard">Labs Admin</a>
+    <nav>
+      <a href="/backend/dashboard">Dashboard</a>
+      <a href="/backend/posts">Posts</a>
+      <button class="btn btn-secondary btn-sm" id="logout-btn">Logout</button>
+    </nav>
+  </header>
+  <div class="container">
+    <h1>New Post</h1>
+    <div class="card">
+      <form id="post-form">
+        <label for="title">Title *</label>
+        <input type="text" id="title" name="title" required />
+
+        <label for="date">Date *</label>
+        <input type="date" id="date" name="date" value={today} required />
+
+        <label for="tags">Tags (comma-separated)</label>
+        <input type="text" id="tags" name="tags" placeholder="tag1, tag2" />
+
+        <div class="checkbox-row">
+          <input type="checkbox" id="draft" name="draft" />
+          <label for="draft" style="margin:0;cursor:pointer">Save as draft</label>
+        </div>
+
+        <label for="body">Body (Markdown)</label>
+        <textarea id="body" name="body" placeholder="Write your post content here…"></textarea>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary" id="submit-btn">Create Post</button>
+          <a href="/backend/posts" class="btn btn-secondary">Cancel</a>
+        </div>
+        <p class="error-msg" id="error-msg"></p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const BASE = '/backend';
+
+    (async () => {
+      try {
+        const r = await fetch(`${BASE}/api/me`);
+        if (!r.ok) window.location.href = `${BASE}/`;
+      } catch { window.location.href = `${BASE}/`; }
+    })();
+
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await fetch(`${BASE}/api/logout`, { method: 'POST' });
+      window.location.href = `${BASE}/`;
+    });
+
+    document.getElementById('post-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const btn = document.getElementById('submit-btn') as HTMLButtonElement;
+      const errEl = document.getElementById('error-msg')!;
+      btn.disabled = true;
+      btn.textContent = 'Creating…';
+      errEl.textContent = '';
+
+      const title = (form.querySelector('#title') as HTMLInputElement).value.trim();
+      const date = (form.querySelector('#date') as HTMLInputElement).value;
+      const tagsRaw = (form.querySelector('#tags') as HTMLInputElement).value;
+      const draft = (form.querySelector('#draft') as HTMLInputElement).checked;
+      const body = (form.querySelector('#body') as HTMLTextAreaElement).value;
+
+      const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+
+      try {
+        const res = await fetch(`${BASE}/api/posts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, date, tags, draft, body }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          window.location.href = `${BASE}/posts/edit?slug=${encodeURIComponent(data.slug)}`;
+        } else {
+          errEl.textContent = data.error || 'Failed to create post';
+          btn.disabled = false;
+          btn.textContent = 'Create Post';
+        }
+      } catch {
+        errEl.textContent = 'Network error';
+        btn.disabled = false;
+        btn.textContent = 'Create Post';
+      }
+    });
+  </script>
+</body>
+</html>

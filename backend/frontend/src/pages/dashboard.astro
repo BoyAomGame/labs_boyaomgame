@@ -1,0 +1,197 @@
+---
+const base = import.meta.env.BASE_URL;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Labs Admin</title>
+  <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117; --bg2: #1a1d27; --bg3: #222533;
+      --border: #2e3248; --text: #e2e8f0; --text-muted: #8892a4;
+      --accent: #6366f1; --accent-hover: #818cf8;
+      --danger: #ef4444; --success: #22c55e; --radius: 6px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+    header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+    header .brand { font-weight: 700; font-size: 16px; color: var(--text); text-decoration: none; }
+    header nav { display: flex; gap: 16px; align-items: center; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-hover); }
+    .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+    .system-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .card-title { font-weight: 600; font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    .badge-green { background: #14532d; color: #86efac; }
+    .badge-red { background: #450a0a; color: #fca5a5; }
+    .badge-yellow { background: #431407; color: #fcd34d; }
+    .badge-gray { background: var(--bg3); color: var(--text-muted); }
+    .info-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; color: var(--text-muted); font-size: 13px; }
+    .info-row span:last-child { color: var(--text); }
+    .system-actions { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 13px; font-weight: 500; font-family: var(--font); transition: background 0.15s; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover:not(:disabled) { background: #dc2626; }
+    .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover:not(:disabled) { background: var(--border); }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .toggle-row { display: flex; align-items: center; gap: 10px; }
+    .toggle-label { font-size: 13px; color: var(--text-muted); }
+    .toggle-btn { position: relative; width: 44px; height: 24px; cursor: pointer; }
+    .toggle-btn input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track { position: absolute; inset: 0; border-radius: 12px; background: var(--bg3); border: 1px solid var(--border); transition: background 0.2s; }
+    .toggle-track::after { content: ''; position: absolute; width: 16px; height: 16px; background: var(--text-muted); border-radius: 50%; top: 3px; left: 3px; transition: left 0.2s, background 0.2s; }
+    .toggle-btn input:checked + .toggle-track { background: var(--danger); border-color: var(--danger); }
+    .toggle-btn input:checked + .toggle-track::after { left: 23px; background: #fff; }
+    .note { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
+    #loading { color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="/backend/dashboard">Labs Admin</a>
+    <nav>
+      <a href="/backend/dashboard">Dashboard</a>
+      <a href="/backend/posts">Posts</a>
+      <button class="btn btn-secondary btn-sm" id="logout-btn">Logout</button>
+    </nav>
+  </header>
+  <div class="container">
+    <h1>Dashboard</h1>
+    <div id="loading">Loading systems…</div>
+    <div id="systems-grid" class="system-grid" style="display:none"></div>
+    <div id="error-msg" style="color:#ef4444;display:none"></div>
+  </div>
+
+  <script>
+    const BASE = '/backend';
+
+    // Auth guard
+    (async () => {
+      try {
+        const r = await fetch(`${BASE}/api/me`);
+        if (!r.ok) window.location.href = `${BASE}/`;
+      } catch {
+        window.location.href = `${BASE}/`;
+      }
+    })();
+
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await fetch(`${BASE}/api/logout`, { method: 'POST' });
+      window.location.href = `${BASE}/`;
+    });
+
+    function stateBadge(state: string): string {
+      if (state === 'online') return `<span class="badge badge-green">${state}</span>`;
+      if (state === 'errored') return `<span class="badge badge-red">${state}</span>`;
+      if (state === 'stopped') return `<span class="badge badge-yellow">${state}</span>`;
+      return `<span class="badge badge-gray">${state}</span>`;
+    }
+
+    async function loadSystems() {
+      const loading = document.getElementById('loading')!;
+      const grid = document.getElementById('systems-grid')! as HTMLDivElement;
+      const errDiv = document.getElementById('error-msg')!;
+      try {
+        const res = await fetch(`${BASE}/api/systems`);
+        if (!res.ok) throw new Error('Failed to load systems');
+        const systems = await res.json() as any[];
+        loading.style.display = 'none';
+        grid.style.display = 'grid';
+        grid.innerHTML = systems.map(sys => `
+          <div class="card" id="sys-${sys.id}">
+            <div class="card-title">
+              ${sys.name}
+              ${sys.maintenance ? '<span class="badge badge-yellow">Maintenance</span>' : '<span class="badge badge-green">Online</span>'}
+            </div>
+            <div class="info-row">
+              <span>Process</span>
+              <span>${stateBadge(sys.processState)}</span>
+            </div>
+            <div class="info-row">
+              <span>Updated</span>
+              <span>${new Date(sys.updatedAt).toLocaleString()}</span>
+            </div>
+            <div class="toggle-row" style="margin-top:12px">
+              <span class="toggle-label">Maintenance</span>
+              <label class="toggle-btn">
+                <input type="checkbox" ${sys.maintenance ? 'checked' : ''} data-id="${sys.id}" class="maint-toggle" />
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+            ${!sys.pm2Available ? '<p class="note">pm2 unavailable — process control disabled</p>' : ''}
+            <div class="system-actions">
+              <button class="btn btn-primary btn-sm" data-id="${sys.id}" data-action="start" ${!sys.pm2Available ? 'disabled' : ''}>Start</button>
+              <button class="btn btn-secondary btn-sm" data-id="${sys.id}" data-action="stop" ${!sys.pm2Available ? 'disabled' : ''}>Stop</button>
+              <button class="btn btn-secondary btn-sm" data-id="${sys.id}" data-action="restart" ${!sys.pm2Available ? 'disabled' : ''}>Restart</button>
+            </div>
+          </div>
+        `).join('');
+
+        // Maintenance toggles
+        document.querySelectorAll('.maint-toggle').forEach(el => {
+          el.addEventListener('change', async (e) => {
+            const input = e.target as HTMLInputElement;
+            const id = input.dataset.id!;
+            const on = input.checked;
+            try {
+              const r = await fetch(`${BASE}/api/systems/${id}/maintenance`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ on }),
+              });
+              if (!r.ok) {
+                input.checked = !on;
+                const d = await r.json().catch(() => ({}));
+                alert(d.error || 'Failed to update maintenance');
+              } else {
+                await loadSystems();
+              }
+            } catch {
+              input.checked = !on;
+            }
+          });
+        });
+
+        // Process action buttons
+        document.querySelectorAll('[data-action]').forEach(el => {
+          el.addEventListener('click', async (e) => {
+            const btn = e.currentTarget as HTMLButtonElement;
+            const id = btn.dataset.id!;
+            const action = btn.dataset.action!;
+            btn.disabled = true;
+            try {
+              const r = await fetch(`${BASE}/api/systems/${id}/process`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action }),
+              });
+              const d = await r.json().catch(() => ({}));
+              if (!r.ok) alert(d.error || `Failed to ${action}`);
+              await loadSystems();
+            } catch {
+              btn.disabled = false;
+            }
+          });
+        });
+      } catch (err: any) {
+        loading.style.display = 'none';
+        errDiv.textContent = err.message;
+        errDiv.style.display = 'block';
+      }
+    }
+
+    loadSystems();
+  </script>
+</body>
+</html>
