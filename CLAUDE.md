@@ -137,3 +137,35 @@ The blog/hub only ever read.
 - It builds (`npm run build`) and starts on its assigned port.
 - Astro apps emit `base`-prefixed asset URLs (view-source shows `/blog/_astro/…`).
 - Reader/writer changes honor the data contract above.
+
+## PR description template — post-merge deploy steps
+
+When creating a GitHub PR, **always append** a "Deploy after merge" section to the PR body
+that lists the exact shell commands to run on the production server. Only include steps for
+sub-systems that were actually changed by the PR.
+
+Example section to append:
+
+```
+## Deploy after merge
+
+Run on the production server after pulling `main`:
+
+\`\`\`bash
+git pull origin main
+
+# hub (if hub/ changed)
+cd hub && npm install && npm run build && pm2 reload labs-hub && cd ..
+
+# blog (if blog/ changed)
+cd blog && npm install && npm run build && pm2 reload labs-blog && cd ..
+
+# backend (if backend/ changed)
+cd backend/server && npm install && npm run build && cd ../frontend && npm install && npm run build && cd ../.. && pm2 reload labs-backend
+\`\`\`
+
+> Skip `npm install` lines if no `package.json` was changed.
+> If `ecosystem.config.cjs` changed, run `pm2 reload ecosystem.config.cjs` instead.
+```
+
+Tailor it to the PR — if only `hub/` was touched, omit the blog and backend blocks.
