@@ -1,10 +1,35 @@
+import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * Locate the repo root by walking up from this module's own directory until a
+ * `misc` folder is found. This is cwd-independent, so a process launched from
+ * the wrong working directory can't silently resolve DATA_DIR to an empty path.
+ * Falls back to the documented cwd-relative default if no marker is found.
+ */
+function findRepoRoot(): string {
+  let current: string;
+  try {
+    current = path.dirname(fileURLToPath(import.meta.url));
+  } catch {
+    current = process.cwd();
+  }
+  while (true) {
+    if (fs.existsSync(path.join(current, 'misc'))) return current;
+    const parent = path.dirname(current);
+    if (parent === current) break; // reached filesystem root
+    current = parent;
+  }
+  // Preserve the original default: <cwd>/../misc/data ⇒ repo root is <cwd>/..
+  return path.resolve(process.cwd(), '..');
+}
 
 /** Returns the DATA_DIR root — env var or repo-relative default. */
 export function getDataDir(): string {
   return process.env.DATA_DIR
     ? path.resolve(process.env.DATA_DIR)
-    : path.resolve(process.cwd(), '..', 'misc', 'data');
+    : path.join(findRepoRoot(), 'misc', 'data');
 }
 
 /** Returns the posts directory inside DATA_DIR. */

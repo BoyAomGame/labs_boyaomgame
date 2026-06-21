@@ -33,10 +33,18 @@ export function coverUrl(slug: string, cover: string): string {
  * Invalid frontmatter entries are skipped with a console.warn.
  * Draft posts are hidden when NODE_ENV === 'production'.
  */
+let warnedMissingPostsDir = false;
+
 export function listPosts(): PostMeta[] {
   const postsDir = getPostsDir();
 
   if (!fs.existsSync(postsDir)) {
+    if (!warnedMissingPostsDir) {
+      console.warn(
+        `[blog] posts directory does not exist: "${postsDir}" — check the DATA_DIR env var / launch cwd. No posts will be shown.`
+      );
+      warnedMissingPostsDir = true;
+    }
     return [];
   }
 
